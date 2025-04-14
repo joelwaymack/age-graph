@@ -1,5 +1,4 @@
-﻿using System;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using Npgsql.Age.Types;
 
@@ -13,7 +12,7 @@ namespace Npgsql.Age.Internal.JsonConverters
     {
         private int _counter = 0;
 
-        public override object? Read(
+        public override object Read(
             ref Utf8JsonReader reader,
             Type typeToConvert,
             JsonSerializerOptions options
@@ -31,7 +30,7 @@ namespace Npgsql.Age.Internal.JsonConverters
              */
 
             string json = JsonDocument.ParseValue(ref reader).RootElement.GetRawText();
-            object? result;
+            object result;
 
             if (_counter % 2 == 0)
                 result = JsonSerializer.Deserialize<Vertex>(json, SerializerOptions.Default);

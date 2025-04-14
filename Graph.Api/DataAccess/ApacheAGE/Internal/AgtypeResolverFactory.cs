@@ -19,17 +19,17 @@ namespace Npgsql.Age.Internal
     {
         public override IPgTypeInfoResolver CreateResolver() => new Resolver();
 
-        public override IPgTypeInfoResolver? CreateArrayResolver() => new ArrayResolver();
+        public override IPgTypeInfoResolver CreateArrayResolver() => new ArrayResolver();
 
         private class Resolver : IPgTypeInfoResolver
         {
             protected static DataTypeName AgtypeDataTypeName => new("ag_catalog.agtype");
 
-            TypeInfoMappingCollection? _mappings;
+            TypeInfoMappingCollection _mappings;
             protected TypeInfoMappingCollection Mappings => _mappings ??= AddMappings(new());
 
-            public PgTypeInfo? GetTypeInfo(
-                Type? type,
+            public PgTypeInfo GetTypeInfo(
+                Type type,
                 DataTypeName? dataTypeName,
                 PgSerializerOptions options
             ) => Mappings.Find(type, dataTypeName, options);
@@ -49,11 +49,11 @@ namespace Npgsql.Age.Internal
 
         private class ArrayResolver : Resolver, IPgTypeInfoResolver
         {
-            TypeInfoMappingCollection? _mappings;
+            TypeInfoMappingCollection _mappings;
             new TypeInfoMappingCollection Mappings => _mappings ??= AddMappings(new(base.Mappings));
 
-            public new PgTypeInfo? GetTypeInfo(
-                Type? type,
+            public new PgTypeInfo GetTypeInfo(
+                Type type,
                 DataTypeName? dataTypeName,
                 PgSerializerOptions options
             ) => Mappings.Find(type, dataTypeName, options);

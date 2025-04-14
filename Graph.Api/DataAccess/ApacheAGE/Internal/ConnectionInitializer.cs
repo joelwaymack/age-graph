@@ -1,7 +1,3 @@
-using System;
-using System.Threading.Tasks;
-using Npgsql;
-
 namespace Npgsql.Age.Internal
 {
     internal static class ConnectionInitializer

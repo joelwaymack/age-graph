@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Npgsql.Age.Internal.JsonConverters
@@ -15,7 +13,7 @@ namespace Npgsql.Age.Internal.JsonConverters
     /// </summary>
     internal class InferredObjectConverter : JsonConverter<object>
     {
-        public override object? Read(
+        public override object Read(
             ref Utf8JsonReader reader,
             Type typeToConvert,
             JsonSerializerOptions options
@@ -25,7 +23,7 @@ namespace Npgsql.Age.Internal.JsonConverters
             {
                 // If it's a '[' token, parse it as an array.
                 case JsonTokenType.StartArray:
-                    return JsonDocument.ParseValue(ref reader).Deserialize<List<object?>>(options);
+                    return JsonDocument.ParseValue(ref reader).Deserialize<List<object>>(options);
 
                 // Parse 'Infinity', '-Infinity', and 'NaN' as doubles instead of strings if required.
                 case JsonTokenType.String:
