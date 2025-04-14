@@ -4,7 +4,7 @@ namespace Graph.Api.DataAccess;
 
 public class PropertySerializer
 {
-    public static string SerializeProperties<T>(T obj)
+    public static string SerializeProperties<T>(T obj) where T : class
     {
         var properties = typeof(T).GetProperties();
         var serializedProperties = new List<string>();
@@ -18,7 +18,7 @@ public class PropertySerializer
                 switch (value)
                 {
                     case string strValue:
-                        serializedProperties.Add($"{propertyName}: '{strValue}'");
+                        serializedProperties.Add($"{propertyName}: '{strValue.Replace("'", "''")}'");
                         break;
                     case int intValue:
                         serializedProperties.Add($"{propertyName}: {intValue}");
