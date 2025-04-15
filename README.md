@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a simple API using Apache AGE PostgreSQL extension to create a graph data structure with a C# API. A simple Web App written with Sveltekit displays the graph.
+This is a simple API using Apache AGE PostgreSQL extension to create a graph data structure with a C# API. A simple Web App written with [Svelte](https://svelte.dev/) displays the graph using [force-graph](https://github.com/vasturiano/force-graph).
 
 ## Tooling
 
@@ -37,11 +37,15 @@ This is a simple API using Apache AGE PostgreSQL extension to create a graph dat
 
 The graph database works off the [Cypher query language](https://neo4j.com/docs/getting-started/cypher/) created by neo4j for their graph databases. Labels are the primary means of differentiating types (think tables) in the database.
 
-There are 2 routes for building out an API:
+There are 2 routes for building out Vertices in the API:
 
 - Explicit types: Your best approach is to create a specific type to represent each vertex label and to add specific edge labels to the `\Graph.Api\Models\EdgeType.cs` enum.
   - The `\Graph.Api\Models\Asset.cs` type, with its corresponding controller, is an example of explicit typing for a vertex.
-- Graph item: A graph item is a generic type that can represent a vertex or an edge since both have a label and properties. Graph items are returned from many API routes to handle the generic nature of the underlying graph.
+- Vertex type: The Vertex type is a generic type that can represent a vertex with a label and properties. The Vertex type is returned from many API routes to handle the generic nature of the underlying graph.
+
+Edges are defined by the `\Graph.Api\Models\Edge.cs` type. The label used for edges is defined in the `\Graph.Api\Models\EdgeType.cs` enum. Add or remove enums based on the edge types you want to support.
+
+The `\Graph.Api\DataAccess\GraphDatabase.cs` type is the heart of the API. It translates actions from the Controllers to Cypher queries for accessing the graph. Add additional methods to this class to support additional graph queries.
 
 ## Credit
 
