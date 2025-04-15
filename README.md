@@ -13,6 +13,15 @@ This is a simple API using Apache AGE PostgreSQL extension to create a graph dat
 
 ## Running
 
+- Database
+
+  1. Create a new graph with the desired name in the postgres database using the following query:
+     ```sql
+     CREATE EXTENSION IF NOT EXISTS age CASCADE;
+     SET search_path = ag_catalog, "$user", public;
+     SELECT create_graph('[graph_name]');
+     ```
+
 - API
 
   1. Create a new file at `/Graph.Api/appsettings.Development.json` to store local environment variables.
@@ -28,6 +37,7 @@ This is a simple API using Apache AGE PostgreSQL extension to create a graph dat
      ```
 
   3. In a terminal, start the API in the `/Graph.Api` directory by running `dotnet run`
+  4. Navigate to <http://localhost:5054/swagger> to exercise the API.
 
 - Web App
   1. In a terminal, install the dependencies in the `/Graph.WebApp` directory by running `npm i`
