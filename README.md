@@ -37,13 +37,11 @@ This is a simple API using Apache AGE PostgreSQL extension to create a graph dat
 
 The graph database works off the [Cypher query language](https://neo4j.com/docs/getting-started/cypher/) created by neo4j for their graph databases. Labels are the primary means of differentiating types (think tables) in the database.
 
-Notes: In an attempt to reduce label errors, all labels are converted to lower_snake_case for matching. While vertexes are not required to have labels in the Apache AGE implementation, this API requires them.
-
 There are 2 routes for building out an API:
 
-- Explicit types: Your best approach is to create a specific type to represent each vertex label.
-  - The Asset type, with a model and controller, is an example of explicit typing
-- Graph item: A graph item is a generic type that can represent a vertex or an edge since both have a label and properties.
+- Explicit types: Your best approach is to create a specific type to represent each vertex label and to add specific edge labels to the `\Graph.Api\Models\EdgeType.cs` enum.
+  - The `\Graph.Api\Models\Asset.cs` type, with its corresponding controller, is an example of explicit typing for a vertex.
+- Graph item: A graph item is a generic type that can represent a vertex or an edge since both have a label and properties. Graph items are returned from many API routes to handle the generic nature of the underlying graph.
 
 ## Credit
 

@@ -1,13 +1,19 @@
 interface Connection {
-	fromVertex: GraphItem;
-	edge: GraphItem;
-	toVertex: GraphItem;
+	fromVertex: Vertex;
+	edge: Edge;
+	toVertex: Vertex;
 }
 
-interface GraphItem {
+interface Vertex {
 	label: string;
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	properties: any;
 }
 
-export type { Connection, GraphItem };
+interface Edge {
+	type: string;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	properties: any;
+}
+
+export type { Connection, Vertex, Edge };

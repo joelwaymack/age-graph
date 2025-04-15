@@ -1,105 +1,71 @@
 <script lang="ts">
-	import { curveBasis } from 'd3-shape';
-	import { cubicOut } from 'svelte/easing';
-
-	import { Chart, Dagre, Group, nodesFromLinks, Rect, Spline, Svg, Text } from 'layerchart';
 	import { getDataService } from '$lib/services/data.svelte';
 	import { onMount } from 'svelte';
+	import type { Connection } from '$lib/types/connection';
+	import type { LinkObject, NodeObject } from 'force-graph';
 
 	const dataService = getDataService();
 
-	let settings: any = {
-		ranker: 'network-simplex',
-		direction: 'left-right',
-		align: 'up-left',
-		nodeSeparation: 50,
-		rankSeparation: 50,
-		edgeSeparation: 10,
-		edgeLabelPosition: 'center',
-		edgeLabelOffset: 10,
-		curve: curveBasis,
-		arrow: 'arrow'
-	};
+	let connections = $state<Connection[]>([]);
+	let nodes = $derived.by<NodeObject[]>(() => {
+		const nodes: NodeObject[] = [];
 
-	let data = $state({
-		nodes: [],
-		edges: []
+		connections.forEach((c) => {
+			const fromVertexId = JSON.stringify(c.fromVertex);
+			if (!nodes.find((n) => n.id === fromVertexId)) {
+				nodes.push({
+					id: fromVertexId
+				});
+			}
+
+			const toVertexId = JSON.stringify(c.toVertex);
+			if (!nodes.find((n) => n.id === toVertexId)) {
+				nodes.push({
+					id: toVertexId
+				});
+			}
+		});
+
+		return nodes;
 	});
+	let links = $derived<LinkObject[]>(
+		connections.map((c) => ({
+			source: JSON.stringify(c.fromVertex),
+			target: JSON.stringify(c.toVertex),
+			edge: JSON.stringify(c.edge),
+			color: c.edge.type === 'Contains' ? 'white' : 'red'
+		}))
+	);
+
+	let graph = $state();
 
 	onMount(async () => {
-		const newData = await dataService.getAllConnections();
-		const revisedData: {nodes: any[], edges: any[]} = {
-			nodes: [],
-			edges: []
-		};
-		newData.forEach(connection => {
-			console.log('connection', connection);
-			const from = `${connection.fromVertex.label}-${connection.fromVertex.properties.id} ${connection.fromVertex.properties.type}`;
-			const to = `${connection.toVertex.label}-${connection.toVertex.properties.id} ${connection.toVertex.properties.type}`;
-			revisedData.edges.push({
-				source: from,
-				target: to
-			});
-			revisedData.nodes.push({id: from});
-			revisedData.nodes.push({id: to});
-		});
-		console.log('revisedData', revisedData);
-		data = revisedData;
+		const ForceGraph = await import('force-graph');
+		connections = await dataService.getAllConnections();
+
+		const graphElement = document.getElementById('graph');
+
+		if (graphElement) {
+			const graphData = {
+				nodes: nodes,
+				links: links
+			};
+			graph = new ForceGraph.default(graphElement)
+				.linkDirectionalParticles(2)
+				.graphData(graphData)
+				.nodeId('id')
+				.nodeLabel('id')
+				.linkLabel('edge')
+				.linkColor('color')
+				.height(graphElement.clientHeight - 70)
+				.width(graphElement.clientWidth);
+		}
 	});
 </script>
 
-<div class="flex gap-2">
-	<div class="h-[500px] flex-1 overflow-hidden rounded border p-4">
-		<Chart
-			{data}
-			transform={{
-				mode: 'canvas',
-				initialScrollMode: 'scale',
-				tweened: { duration: 800, easing: cubicOut }
-			}}
-		>
-			<Svg>
-				<Dagre {data} edges={(d) => d.edges} {...settings} let:nodes let:edges>
-					<g class="edges">
-						{#each edges as edge, i (edge.v + '-' + edge.w)}
-							<Spline
-								data={edge.points}
-								x="x"
-								y="y"
-								class="stroke-surface-content opacity-30"
-								tweened
-								curve={settings.curve}
-								markerEnd={{ type: settings.arrow, class: 'stroke-2 stroke-white' }}
-								stroke="white"
-								strokeWidth={2}
-							/>
-						{/each}
-					</g>
-
-					<g class="nodes">
-						{#each nodes as node (node.label)}
-							<Group x={node.x - node.width / 2} y={node.y - node.height / 2} tweened>
-								<Rect
-									width={node.width}
-									height={node.height}
-									class="fill-surface-200 stroke-primary/50 stroke-2"
-									rx={10}
-								/>
-
-								<Text
-									value={node.label}
-									x={node.width / 2}
-									y={node.height / 2}
-									dy={-2}
-									textAnchor="middle"
-									verticalAnchor="middle"
-									class="pointer-events-none text-xs"
-								/>
-							</Group>
-						{/each}
-					</g>
-				</Dagre>
-			</Svg>
-		</Chart>
+<div class="flex h-full flex-col">
+	<h1 class="text-2xl font-bold">Graph</h1>
+	<div class="grow">
+		<div id="graph" class="h-full rounded border"></div>
 	</div>
 </div>
