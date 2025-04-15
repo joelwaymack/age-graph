@@ -36,8 +36,6 @@
 		"vite": "^6.2.5"
 	},
 	"dependencies": {
-		"d3-shape": "^3.2.0",
-		"layerchart": "^1.0.8",
-		"svelte-ux": "^1.0.4"
+		"force-graph": "^1.49.5"
 	}
 }
