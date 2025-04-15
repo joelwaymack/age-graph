@@ -30,7 +30,7 @@ namespace Npgsql.Age.Types
             return 0;
         }
 
-        public int CompareTo(object? obj)
+        public int CompareTo(object obj)
         {
             if (obj is null || obj is not GraphId)
                 throw new ArgumentException("obj is not a GraphId", nameof(obj));
@@ -38,7 +38,7 @@ namespace Npgsql.Age.Types
             return CompareTo((GraphId)obj);
         }
 
-        public override bool Equals([NotNullWhen(true)] object? obj)
+        public override bool Equals([NotNullWhen(true)] object obj)
         {
             if (obj is null || obj is not GraphId)
                 return false;

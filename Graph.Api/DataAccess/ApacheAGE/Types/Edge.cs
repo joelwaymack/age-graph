@@ -38,7 +38,7 @@ namespace Npgsql.Age.Types
         /// <summary>
         /// Other properties of the edge.
         /// </summary>
-        public Dictionary<string, object?> Properties { get; set; }
+        public Dictionary<string, object> Properties { get; set; }
 
         public override readonly string ToString()
         {
@@ -49,7 +49,7 @@ namespace Npgsql.Age.Types
             return result;
         }
 
-        public override readonly bool Equals([NotNullWhen(true)] object? obj)
+        public override readonly bool Equals([NotNullWhen(true)] object obj)
         {
             if (obj is null || obj is not Edge)
                 return false;

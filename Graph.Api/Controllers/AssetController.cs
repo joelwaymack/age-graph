@@ -1,7 +1,6 @@
 using Graph.Api.DataAccess;
 using Graph.Api.Models;
 using Microsoft.AspNetCore.Mvc;
-using Npgsql.Age.Types;
 
 namespace Graph.Api.Controllers;
 
@@ -40,46 +39,6 @@ public class AssetController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating asset");
-            return StatusCode(500, "Internal server error");
-        }
-    }
-
-    [HttpPost("{fromId}/{edgeType}/{toId}")]
-    public async Task<IActionResult> CreateEdge(string fromId, EdgeType edgeType, string toId)
-    {
-        if (string.IsNullOrWhiteSpace(fromId) || string.IsNullOrWhiteSpace(toId))
-        {
-            return BadRequest("FromId and ToId cannot be null or empty.");
-        }
-
-        try
-        {
-            var edge = await _graphDatabase.CreateEdgeAsync<Asset>(fromId, edgeType, toId);
-            return Created("", edge);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating edge");
-            return StatusCode(500, "Internal server error");
-        }
-    }
-
-    [HttpGet("{id}/edges")]
-    public async Task<IActionResult> GetAssetEdges(string id)
-    {
-        if (string.IsNullOrWhiteSpace(id))
-        {
-            return BadRequest("Id cannot be null or empty.");
-        }
-
-        try
-        {
-            var edges = await _graphDatabase.GetEdgesAsync<Asset>(id);
-            return Ok(edges);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving asset edges");
             return StatusCode(500, "Internal server error");
         }
     }

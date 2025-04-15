@@ -1,7 +1,6 @@
-using System.Text.Json;
 using Graph.Api.Models;
 using Npgsql;
-using Npgsql.Age.Types;
+using Age = Npgsql.Age.Types;
 
 namespace Graph.Api.DataAccess;
 
@@ -20,30 +19,33 @@ public class GraphDatabase
 
     public async Task<Vertex> CreateVertexAsync<T>(T vertex) where T : class
     {
-        var query = ComposeQuery($"CREATE (v:{GetLabel<T>()} {PropertySerializer.SerializeProperties(vertex)}) return v", "v agtype");
+        return await CreateVertexAsync(Vertex.FromTypedVertex(vertex));
+    }
+
+    public async Task<Vertex> CreateVertexAsync(Vertex vertex)
+    {
+        if (string.IsNullOrWhiteSpace(vertex.Label))
+        {
+            throw new ArgumentException("Label cannot be null or empty.", nameof(vertex.Label));
+        }
+
+        if (vertex == null)
+        {
+            throw new ArgumentNullException(nameof(vertex), "Vertex cannot be null.");
+        }
+
+        var query = ComposeQuery($"CREATE (v:{vertex.Label} {vertex.SerializeProperties()}) return v", "v agtype");
 
         await using var command = _dataSource.CreateCommand(query);
         await using var reader = await command.ExecuteReaderAsync();
 
         await reader.ReadAsync();
-        return reader.GetFieldValue<Agtype>(0).GetVertex();
+        return Vertex.FromAgeVertex(reader.GetFieldValue<Age.Agtype>(0).GetVertex());
     }
 
     public async Task<IList<Vertex>> GetAllVerticesAsync<T>() where T : class
     {
-        var query = ComposeQuery($"MATCH (v:{GetLabel<T>()}) return v", "v agtype");
-
-        await using var command = _dataSource.CreateCommand(query);
-        await using var reader = await command.ExecuteReaderAsync();
-
-        var vertices = new List<Vertex>();
-        while (await reader.ReadAsync())
-        {
-            var result = reader.GetFieldValue<Agtype>(0);
-            vertices.Add(result.GetVertex());
-        }
-
-        return vertices;
+        return await GetAllVerticesAsync(Vertex.GetLabel<T>());
     }
 
     public async Task<IList<Vertex>> GetAllVerticesAsync(string label)
@@ -58,100 +60,35 @@ public class GraphDatabase
         var vertices = new List<Vertex>();
         while (await reader.ReadAsync())
         {
-            var result = reader.GetFieldValue<Agtype>(0);
-            vertices.Add(result.GetVertex());
+            var result = reader.GetFieldValue<Age.Agtype>(0);
+            vertices.Add(Vertex.FromAgeVertex(result.GetVertex()));
         }
 
         return vertices;
     }
 
-    public async Task<Vertex> CreateVertexAsync(string label, JsonDocument vertex)
+    public async Task<Connection> CreateEdgeAsync(Vertex fromVertex, Edge edge, Vertex toVertex)
     {
-        if (string.IsNullOrWhiteSpace(label))
-        {
-            throw new ArgumentException("Label cannot be null or empty.", nameof(label));
-        }
-
-        if (vertex == null)
-        {
-            throw new ArgumentNullException(nameof(vertex), "Vertex cannot be null.");
-        }
-
-        var query = ComposeQuery($"CREATE (v:{label} {PropertySerializer.SerializeJsonDocument(vertex)}) return v", "v agtype");
+        var query = ComposeQuery(@$"MATCH (f:{fromVertex.Label} {fromVertex.SerializeProperties()}), (t:{toVertex.Label} {toVertex.SerializeProperties()}) 
+            CREATE (f)-[e:{edge.GetEdgeLabel()} {edge.SerializeProperties()}]->(t) return f, e, t",
+            "f agtype, e agtype, t agtype");
 
         await using var command = _dataSource.CreateCommand(query);
         await using var reader = await command.ExecuteReaderAsync();
 
         await reader.ReadAsync();
-        return reader.GetFieldValue<Agtype>(0).GetVertex();
-    }
 
-    public async Task<Edge> CreateEdgeAsync<T>(string fromId, EdgeType edgeType, string toId) where T : class
-    {
-        var query = ComposeQuery($"MATCH (a:{GetLabel<T>()} {{id: '{fromId}'}}), (b:{GetLabel<T>()} {{id: '{toId}'}}) CREATE (a)-[e:{GetEdgeType(edgeType)}]->(b) return a, e, b",
-            "a agtype, e agtype, b agtype");
-
-        await using var command = _dataSource.CreateCommand(query);
-        await using var reader = await command.ExecuteReaderAsync();
-
-        // This is returning 1 row with 3 columns not rows
-        var vertices = new List<Agtype>();
-        while (await reader.ReadAsync())
+        return new Connection
         {
-            var result = reader.GetFieldValue<Agtype>(0);
-            vertices.Add(result);
-        }
-
-        return vertices.First(x => x.IsEdge).GetEdge();
-    }
-
-    internal async Task<IList<Agtype>> GetEdgesAsync<T>(string id) where T : class
-    {
-        var query = ComposeQuery($"MATCH (a:{GetLabel<T>()} {{id: '{id}'}} )-[e]->(b) WHERE a.id = '{id}' return a, e, b", "a agtype, e agtype, b agtype");
-
-        await using var command = _dataSource.CreateCommand(query);
-        await using var reader = await command.ExecuteReaderAsync();
-
-        // This is returning 3 column rows
-        var data = new List<Agtype>();
-        while (await reader.ReadAsync())
-        {
-            var result = reader.GetFieldValue<Agtype>(0);
-            data.Add(result);
-        }
-
-        return data;
-    }
-
-    public async Task<IList<Connection>> GetVertexEdgesAsync(string label, string id, EdgeType? edgeType)
-    {
-        var query = ComposeQuery($"MATCH (a:{label} {{id: '{id}'}})-[e1]-(b1) return a, e1, b1", "a agtype, e agtype, b agtype");
-
-        await using var command = _dataSource.CreateCommand(query);
-        await using var reader = await command.ExecuteReaderAsync();
-
-        var connections = new List<Connection>();
-        while (await reader.ReadAsync())
-        {
-
-            var v1 = reader.GetFieldValue<Agtype>(0).GetVertex();
-            var edge = reader.GetFieldValue<Agtype>(1).GetEdge();
-            var v2 = reader.GetFieldValue<Agtype>(2).GetVertex();
-
-            connections.Add(new Connection
-            {
-                FromVertex = edge.StartId == v1.Id ? GraphItem.FromVertex(v1) : GraphItem.FromVertex(v2),
-                Edge = GraphItem.FromEdge(edge),
-                ToVertex = edge.StartId == v1.Id ? GraphItem.FromVertex(v2) : GraphItem.FromVertex(v1)
-            });
-        }
-
-        return connections;
+            FromVertex = Vertex.FromAgeVertex(reader.GetFieldValue<Age.Agtype>(0).GetVertex()),
+            Edge = Edge.FromAgeEdge(reader.GetFieldValue<Age.Agtype>(1).GetEdge()),
+            ToVertex = Vertex.FromAgeVertex(reader.GetFieldValue<Age.Agtype>(2).GetVertex())
+        };
     }
 
     public async Task<IList<Connection>> GetConnectionsAsync()
     {
-        var query = ComposeQuery($"MATCH (a)-[e]-(b) return a, e, b", "a agtype, e agtype, b agtype");
+        var query = ComposeQuery($"MATCH (f)-[e]->(t) return f, e, t", "f agtype, e agtype, t agtype");
 
         await using var command = _dataSource.CreateCommand(query);
         await using var reader = await command.ExecuteReaderAsync();
@@ -160,19 +97,33 @@ public class GraphDatabase
         while (await reader.ReadAsync())
         {
 
-            var v1 = reader.GetFieldValue<Agtype>(0).GetVertex();
-            var edge = reader.GetFieldValue<Agtype>(1).GetEdge();
-            var v2 = reader.GetFieldValue<Agtype>(2).GetVertex();
+            var from = reader.GetFieldValue<Age.Agtype>(0).GetVertex();
+            var e = reader.GetFieldValue<Age.Agtype>(1).GetEdge();
+            var to = reader.GetFieldValue<Age.Agtype>(2).GetVertex();
 
             connections.Add(new Connection
             {
-                FromVertex = edge.StartId == v1.Id ? GraphItem.FromVertex(v1) : GraphItem.FromVertex(v2),
-                Edge = GraphItem.FromEdge(edge),
-                ToVertex = edge.StartId == v1.Id ? GraphItem.FromVertex(v2) : GraphItem.FromVertex(v1)
+                FromVertex = Vertex.FromAgeVertex(from),
+                Edge = Edge.FromAgeEdge(e),
+                ToVertex = Vertex.FromAgeVertex(to)
             });
         }
 
         return connections;
+    }
+
+    public async Task<IList<string>> GetAllVertexLabelsAsync()
+    {
+        var query = ComposeQuery("MATCH (n) RETURN DISTINCT labels(n) AS vertex_labels", "vertext_labels agtype");
+
+        await using var command = _dataSource.CreateCommand(query);
+        await using var reader = await command.ExecuteReaderAsync();
+
+        await reader.ReadAsync();
+        var result = reader.GetFieldValue<Age.Agtype>(0).GetList();
+        var labels = result.Where(l => l is string).Select(l => l.ToString()).ToList();
+
+        return labels;
     }
 
     private string ComposeQuery(string cypher, string returnSet)
@@ -183,15 +134,5 @@ public class GraphDatabase
             $$) as ({returnSet});";
     }
 
-    private string GetLabel<T>() where T : class
-    {
-        var type = typeof(T);
-        var label = type.Name;
-        return label;
-    }
 
-    private string GetEdgeType(EdgeType edgeType)
-    {
-        return edgeType.ToString();
-    }
 }

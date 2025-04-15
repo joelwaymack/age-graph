@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json;
 using Npgsql.Age.Internal.JsonConverters;
 
 namespace Npgsql.Age.Types
@@ -204,9 +200,9 @@ namespace Npgsql.Age.Types
         /// <returns>
         /// List of objects.
         /// </returns>
-        public List<object?> GetList(bool readFloatingPointLiterals = true)
+        public List<object> GetList(bool readFloatingPointLiterals = true)
         {
-            var result = JsonSerializer.Deserialize<List<object?>>(
+            var result = JsonSerializer.Deserialize<List<object>>(
                 _value,
                 SerializerOptions.Default
             );
@@ -349,7 +345,7 @@ namespace Npgsql.Age.Types
 
         public static explicit operator string(Agtype agtype) => agtype.GetString();
 
-        public static explicit operator List<object?>(Agtype agtype) => agtype.GetList();
+        public static explicit operator List<object>(Agtype agtype) => agtype.GetList();
 
         public static explicit operator Vertex(Agtype agtype) => agtype.GetVertex();
 

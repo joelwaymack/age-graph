@@ -1,7 +1,5 @@
 using Graph.Api.DataAccess;
-using Graph.Api.Models;
 using Microsoft.AspNetCore.Mvc;
-using Npgsql.Age.Types;
 
 namespace Graph.Api.Controllers;
 
@@ -31,27 +29,21 @@ public class VertexController : ControllerBase
         return await _graphDatabase.GetAllVerticesAsync(label);
     }
 
-    [HttpGet("{label}/{id}")]
-    public async Task<IList<Connection>> GetVertexEdges(string label, string id, [FromQuery] EdgeType? edgeType = null)
+    [HttpGet("labels")]
+    public async Task<IList<string>> GetAllVertexLabels()
     {
-        var connections = await _graphDatabase.GetVertexEdgesAsync(label, id, edgeType);
-        return connections;
+        return await _graphDatabase.GetAllVertexLabelsAsync();
     }
 
-    // [HttpPost("{label}")]
-    // public async Task<IActionResult> CreateVertex(string label, [FromBody] JsonDocument vertex)
-    // {
-    //     if (string.IsNullOrWhiteSpace(label))
-    //     {
-    //         return BadRequest("Label cannot be null or empty.");
-    //     }
+    [HttpPost]
+    public async Task<IActionResult> CreateVertex([FromBody] Vertex vertex)
+    {
+        if (vertex == null || string.IsNullOrEmpty(vertex.Label))
+        {
+            return BadRequest("Invalid vertex data.");
+        }
 
-    //     if (vertex == null)
-    //     {
-    //         return BadRequest("Vertex cannot be null.");
-    //     }
-
-    //     await _graphDatabase.CreateVertexAsync(label, vertex);
-    //     return Created();
-    // }
+        var createdVertex = await _graphDatabase.CreateVertexAsync(vertex);
+        return CreatedAtAction(nameof(GetVerticesByLabel), new { label = createdVertex.Label }, createdVertex);
+    }
 }
