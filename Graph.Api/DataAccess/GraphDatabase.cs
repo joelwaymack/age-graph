@@ -126,6 +126,56 @@ public class GraphDatabase
         return labels;
     }
 
+    public async Task<IList<T>> ExecuteCypherQueryAsync<T>(string cypher)
+    {
+        var query = ComposeQuery(cypher, "result agtype");
+
+        await using var command = _dataSource.CreateCommand(query);
+        await using var reader = await command.ExecuteReaderAsync();
+
+        var results = new List<T>();
+        while (await reader.ReadAsync())
+        {
+            if (reader.IsDBNull(0))
+            {
+                continue;
+            }
+
+            var result = reader.GetFieldValue<Age.Agtype>(0);
+
+            if (typeof(T) == typeof(int))
+            {
+                results.Add((T)(object)result.GetInt32());
+            }
+            else if (typeof(T) == typeof(long))
+            {
+                results.Add((T)(object)result.GetInt64());
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                results.Add((T)(object)result.GetFloat());
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                results.Add((T)(object)result.GetDouble());
+            }
+            else if (typeof(T) == typeof(bool))
+            {
+                results.Add((T)(object)result.GetBoolean());
+            }
+            else if (typeof(T) == typeof(string))
+            {
+                results.Add((T)(object)result.GetString());
+            }
+            else
+            {
+                throw new NotSupportedException($"Type {typeof(T)} is not supported.");
+            }
+        }
+
+        return results;
+    }
+
     private string ComposeQuery(string cypher, string returnSet)
     {
         return @$"SET search_path = ag_catalog, ""$user"", public;
@@ -133,6 +183,4 @@ public class GraphDatabase
             {cypher}
             $$) as ({returnSet});";
     }
-
-
 }

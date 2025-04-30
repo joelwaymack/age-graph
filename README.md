@@ -11,6 +11,7 @@ This is a simple API using Apache AGE PostgreSQL extension to create a graph dat
 - Postrgres Database with the [Apache AGE extension](https://age.apache.org/) enabled
   - How to [enable extensions in Azure Postgres](https://learn.microsoft.com/en-us/azure/postgresql/extensions/how-to-allow-extensions?tabs=allow-extensions-portal)
   - Ensure you have the AGE extension enabled in both the `azure.extensions` and the `shared_preload_libraries` settings for Azure database for PostgreSQL flexible server
+- An AI inferencing endpoint from Azure AI Foundry
 
 ## Running
 
@@ -33,6 +34,11 @@ This is a simple API using Apache AGE PostgreSQL extension to create a graph dat
        "Postgres": {
          "ConnectionString": "[connection_string]",
          "GraphName": "[graph_name]"
+       },
+       "AiConfig": {
+         "DeploymentName": "[deployment_name]",
+         "ApiKey": "[api_key]",
+         "Endpoint": "[endpont_uri]"
        }
      }
      ```

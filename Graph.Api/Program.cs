@@ -1,4 +1,7 @@
+using Graph.Api.Config;
 using Graph.Api.DataAccess;
+using Graph.Api.Services;
+using Microsoft.SemanticKernel;
 using Npgsql;
 using Npgsql.Age.Internal;
 
@@ -26,6 +29,12 @@ builder.Services.AddCors(options =>
             builder.AllowAnyOrigin();
         });
 });
+
+var kernelBuilder = builder.Services.AddKernel();
+var aiConfig = builder.Configuration.GetSection(AiConfig.ConfigSectionName).Get<AiConfig>();
+kernelBuilder.AddAzureOpenAIChatCompletion(deploymentName: aiConfig.DeploymentName, apiKey: aiConfig.ApiKey, endpoint: aiConfig.Endpoint);
+kernelBuilder.Plugins.Services.AddTransient<GraphDatabase>();
+kernelBuilder.Plugins.AddFromType<AssetPlugin>("Assets");
 
 builder.Services.AddControllers();
 
